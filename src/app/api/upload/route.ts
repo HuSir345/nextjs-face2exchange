@@ -22,38 +22,48 @@ export async function POST(request: Request) {
     }
 
     // 处理图片数据
-    let imageData: string | Blob = image
+    let base64Image: string
     if (image instanceof Blob) {
       // 如果是 Blob，转换为 base64
       const buffer = await image.arrayBuffer()
-      imageData = Buffer.from(buffer).toString('base64')
-    } else if (typeof image === 'string' && image.startsWith('data:')) {
-      // 如果是 base64 数据 URL，提取 base64 部分
-      imageData = image.split(',')[1]
+      base64Image = Buffer.from(buffer).toString('base64')
+    } else if (typeof image === 'string') {
+      if (image.startsWith('data:')) {
+        // 如果是 base64 数据 URL，提取 base64 部分
+        base64Image = image.split(',')[1]
+      } else {
+        // 如果已经是 base64 字符串
+        base64Image = image
+      }
+    } else {
+      throw new Error('Unsupported image format')
     }
 
-    // 创建新的 URLSearchParams 对象
-    const params = new URLSearchParams()
-    params.append('key', IMGBB_API_KEY)
-    params.append('image', imageData.toString())
-
+    // 使用 fetch 发送请求
     const response = await fetch('https://api.imgbb.com/1/upload', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: params.toString()
+      body: new URLSearchParams({
+        key: IMGBB_API_KEY,
+        image: base64Image,
+      }).toString()
     })
 
-    const data = await response.json()
-
     if (!response.ok) {
-      console.error('ImgBB API error response:', data)
+      const errorData = await response.json()
+      console.error('ImgBB API error response:', errorData)
       return NextResponse.json(
-        { success: false, error: `ImgBB API error: ${data.error?.message || response.status}` },
+        { 
+          success: false, 
+          error: `ImgBB API error: ${errorData.error?.message || response.statusText}` 
+        },
         { status: response.status }
       )
     }
+
+    const data = await response.json()
 
     if (data.success) {
       return NextResponse.json({
