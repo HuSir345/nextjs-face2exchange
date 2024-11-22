@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "env": {
+    "IMGBB_API_KEY": "c29b0e93329c7d478fc186bf56deff3a",
+    "COZE_API_KEY": "pat_0OjgQdYOMeEPHi3wUdDvZCLjaLOgbS87dDYMVdoxFQO9iYWuaamgn5pqrHKhlig2",
+    "COZE_WORKFLOW_ID": "7435930213924306978"
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "regions": ["iad1"]
+} 
