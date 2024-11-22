@@ -21,23 +21,29 @@ export async function POST(request: Request) {
       )
     }
 
-    const imgbbFormData = new FormData()
-    
+    // 处理图片数据
+    let imageData: string | Blob = image
     if (image instanceof Blob) {
+      // 如果是 Blob，转换为 base64
       const buffer = await image.arrayBuffer()
-      const base64 = Buffer.from(buffer).toString('base64')
-      imgbbFormData.append('image', base64)
-    } else {
-      imgbbFormData.append('image', image)
+      imageData = Buffer.from(buffer).toString('base64')
+    } else if (typeof image === 'string' && image.startsWith('data:')) {
+      // 如果是 base64 数据 URL，提取 base64 部分
+      imageData = image.split(',')[1]
     }
 
-    const response = await fetch(
-      `https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`,
-      {
-        method: 'POST',
-        body: imgbbFormData,
-      }
-    )
+    // 创建新的 URLSearchParams 对象
+    const params = new URLSearchParams()
+    params.append('key', IMGBB_API_KEY)
+    params.append('image', imageData.toString())
+
+    const response = await fetch('https://api.imgbb.com/1/upload', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString()
+    })
 
     const data = await response.json()
 
