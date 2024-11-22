@@ -47,29 +47,46 @@ export default function Home() {
 
   const callCozeAPI = async (face_image: string, base_image: string) => {
     try {
+      const requestBody = {
+        face_image,
+        base_image
+      }
+      console.log('Coze API 请求报文:', {
+        url: 'https://api.coze.cn/v1/workflow/run',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: requestBody
+      })
+
       const response = await fetch('/api/coze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          face_image,
-          base_image
-        })
+        body: JSON.stringify(requestBody)
       })
 
       if (!response.ok) {
+        console.error('Coze API 响应错误:', {
+          status: response.status,
+          statusText: response.statusText
+        })
         throw new Error('Coze API call failed')
       }
 
       const data = await response.json()
+      console.log('Coze API 返回报文:', data)
+
       if (!data.success) {
+        console.error('Coze API 处理失败:', data.error)
         throw new Error(data.error || 'Coze API error')
       }
 
       return data.url
     } catch (error) {
-      console.error('Coze API error:', error)
+      console.error('Coze API 调用错误:', error)
       throw error
     }
   }
