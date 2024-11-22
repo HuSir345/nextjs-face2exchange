@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 
+export const runtime = 'edge'
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: Request) {
   try {
     const formData = await request.formData()
@@ -68,10 +71,4 @@ export async function POST(request: Request) {
       { status: 500 }
     )
   }
-}
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
 } 

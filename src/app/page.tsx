@@ -76,27 +76,47 @@ export default function Home() {
 
   const uploadImageFromUrl = async (imageUrl: string) => {
     try {
+      console.log('开始从 URL 下载图片:', imageUrl)
       // 获取图片数据
       const response = await fetch(imageUrl)
+      if (!response.ok) {
+        console.error('下载图片失败:', response.status, response.statusText)
+        throw new Error('Failed to download image')
+      }
+
       const blob = await response.blob()
+      console.log('图片下载完成，大小:', blob.size, '字节')
+      
+      // 创建 File 对象
+      const file = new File([blob], 'result.jpg', { type: 'image/jpeg' })
+      console.log('创建文件对象:', file.name, file.type, file.size)
 
       // 创建FormData对象上传到ImgBB
       const formData = new FormData()
-      formData.append('image', blob)
+      formData.append('image', file)
 
+      console.log('开始上传结果图片到 ImgBB...')
       const uploadResponse = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       })
 
       if (!uploadResponse.ok) {
+        console.error('上传失败:', uploadResponse.status, uploadResponse.statusText)
         throw new Error('Failed to upload result image')
       }
 
       const data = await uploadResponse.json()
+      console.log('ImgBB 上传响应:', data)
+
+      if (!data.success) {
+        console.error('ImgBB 处理失败:', data.error)
+        throw new Error(data.error || 'Upload failed')
+      }
+      
       return data.url
     } catch (error) {
-      console.error('Upload result image error:', error)
+      console.error('上传结果图片错误:', error)
       throw error
     }
   }
@@ -111,43 +131,59 @@ export default function Home() {
     setError(null)
 
     try {
+      console.log('开始上传原始图片...')
       // 首先上传两张原始图片
       const uploadPromises = [1, 2].map(async (picNum) => {
+        console.log(`准备上传图片 ${picNum}...`)
         const formData = new FormData()
         formData.append('image', selectedFiles[picNum]!)
 
+        console.log(`发送图片 ${picNum} 到 ImgBB...`)
         const response = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         })
         
         if (!response.ok) {
+          console.error(`图片 ${picNum} 上传失败:`, response.status, response.statusText)
           throw new Error(`Upload failed: ${response.statusText}`)
         }
 
         const data = await response.json()
+        console.log(`图片 ${picNum} 上传结果:`, data)
         
         if (!data.success) {
+          console.error(`图片 ${picNum} 处理失败:`, data.error)
           throw new Error(data.error || 'Upload failed')
         }
 
         return data
       })
 
+      console.log('等待所有图片上传完成...')
       const [result1, result2] = await Promise.all(uploadPromises)
+
+      console.log('图片1 URL:', result1.url)
+      console.log('图片2 URL:', result2.url)
 
       setPic1Url(result1.url)
       setPic2Url(result2.url)
 
       // 调用Coze API
+      console.log('开始调用 Coze API...')
       const cozeResult = await callCozeAPI(result1.url, result2.url)
+      console.log('Coze API 返回结果:', cozeResult)
       
       // 将Coze返回的图片上传到ImgBB
+      console.log('开始上传结果图片到 ImgBB...')
       const finalImageUrl = await uploadImageFromUrl(cozeResult)
+      console.log('最终图片 URL:', finalImageUrl)
+      
       setResultUrl(finalImageUrl)
+      console.log('处理完成!')
 
     } catch (error) {
-      console.error('Process failed:', error)
+      console.error('处理失败:', error)
       setError(error instanceof Error ? error.message : 'Process failed')
     } finally {
       setLoading(false)
